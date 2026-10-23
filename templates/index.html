@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Study Planner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    /* Apply the saved theme before first paint so there is no flash */
+    try {
+      var saved = localStorage.getItem("theme");
+      if (saved) document.documentElement.dataset.theme = saved;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Study Planner</div>
+
+    <nav class="nav" aria-label="Main">
+      <a href="#dashboard" data-view="dashboard">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="7" rx="1.5"/><rect x="11.5" y="2.5" width="6" height="4" rx="1.5"/><rect x="2.5" y="12.5" width="6" height="5" rx="1.5"/><rect x="11.5" y="9.5" width="6" height="8" rx="1.5"/></svg>
+        Dashboard
+      </a>
+      <a href="#schedule" data-view="schedule">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4" width="15" height="13.5" rx="2"/><path d="M2.5 8.5h15M6.5 2.5v3M13.5 2.5v3"/></svg>
+        Schedule
+      </a>
+      <a href="#subjects" data-view="subjects">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3.5h9.5a2 2 0 0 1 2 2V17H6a2 2 0 0 1-2-2V3.5z"/><path d="M4 15a2 2 0 0 1 2-2h9.5"/></svg>
+        Subjects
+      </a>
+      <a href="#todos" data-view="todos">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5.5l1.5 1.5 2.5-3M3.5 12.5l1.5 1.5 2.5-3M10.5 5.5h6M10.5 12.5h6"/></svg>
+        To-do
+      </a>
+      <a href="#focus" data-view="focus">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="11" r="6.5"/><path d="M10 11V7.5M8 2.5h4"/></svg>
+        Focus
+      </a>
+      <a href="#flashcards" data-view="flashcards">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="6.5" width="12" height="10" rx="1.8"/><path d="M5.5 6.5V5.3a1.8 1.8 0 0 1 1.8-1.8h9.4a1.8 1.8 0 0 1 1.8 1.8v6.4a1.8 1.8 0 0 1-1.8 1.8h-2.2"/></svg>
+        Flashcards
+      </a>
+      <a href="#settings" data-view="settings">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h8M15 6h2M3 14h2M9 14h8"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="14" r="2"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <a id="pomo-mini" class="pomo-mini" href="#focus" hidden></a>
+
+    <div class="side-foot">
+      <button id="notify-btn" class="chip" type="button">Reminders off</button>
+      <button id="theme-btn" class="chip" type="button">Dark mode</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div>
+        <h1 id="page-title">Dashboard</h1>
+        <p id="page-sub" class="sub"></p>
+      </div>
+      <button id="regen-btn" class="btn" type="button">Rebuild schedule</button>
+    </header>
+
+    <div id="perm-strip" class="strip" hidden>
+      <span>Turn on notifications to get a reminder even when this tab is in the background.</span>
+      <button id="perm-allow" class="btn" type="button">Turn on</button>
+      <button id="perm-dismiss" class="link-btn" type="button">Not now</button>
+    </div>
+
+    <!-- ============ Dashboard ============ -->
+    <section id="view-dashboard" class="view">
+      <div class="grid kpis">
+        <article class="card kpi">
+          <h3>Today</h3>
+          <div class="kpi-value" id="kpi-today-value">–</div>
+          <div class="meter" aria-hidden="true"><i id="kpi-today-bar"></i></div>
+          <p class="kpi-note" id="kpi-today-note"></p>
+        </article>
+        <article class="card kpi">
+          <h3>Overall progress</h3>
+          <div class="kpi-value" id="kpi-overall-value">–</div>
+          <div class="meter" aria-hidden="true"><i id="kpi-overall-bar"></i></div>
+          <p class="kpi-note" id="kpi-overall-note"></p>
+        </article>
+        <article class="card kpi">
+          <h3>Next exam</h3>
+          <div class="kpi-value" id="kpi-exam-value">–</div>
+          <p class="kpi-note" id="kpi-exam-note"></p>
+        </article>
+        <article class="card kpi">
+          <h3>Study streak</h3>
+          <div class="kpi-value" id="kpi-streak-value">–</div>
+          <div class="week" id="kpi-streak-week" role="img"></div>
+          <p class="kpi-note" id="kpi-streak-note"></p>
+        </article>
+      </div>
+
+      <div class="grid twelve">
+        <article class="card span7">
+          <div class="card-head">
+            <h2>Today's sessions</h2>
+            <span class="meta" id="today-meta"></span>
+          </div>
+          <div id="today-list"></div>
+        </article>
+        <article class="card span5">
+          <div class="card-head">
+            <h2>To-do</h2>
+            <a class="meta-link" href="#todos" id="todo-card-meta">View all</a>
+          </div>
+          <form id="todo-quick" class="quick-add">
+            <input id="todo-quick-title" maxlength="120" placeholder="Add a task and press Enter" aria-label="New task">
+            <button class="btn" type="submit">Add</button>
+          </form>
+          <div id="todo-card-list"></div>
+        </article>
+      </div>
+
+      <div class="grid twelve">
+        <article class="card span7">
+          <div class="card-head"><h2>Next 14 days</h2><span class="meta">Planned study time per day</span></div>
+          <div id="workload"></div>
+        </article>
+        <article class="card span5">
+          <div class="card-head"><h2>Time by subject</h2></div>
+          <div id="donut"></div>
+        </article>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <div class="card-head"><h2>Exam countdown</h2></div>
+          <div id="countdown"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ Schedule ============ -->
+    <section id="view-schedule" class="view" hidden>
+      <div class="chips" id="schedule-filters" role="group" aria-label="Filter sessions"></div>
+      <div id="schedule-list" class="day-grid"></div>
+    </section>
+
+    <!-- ============ Subjects ============ -->
+    <section id="view-subjects" class="view" hidden>
+      <div class="grid subjects-layout">
+        <article class="card">
+          <div class="card-head"><h2>Add a subject</h2></div>
+          <form id="subject-form" class="form">
+            <label class="field">Subject name
+              <input id="name" required maxlength="60" placeholder="e.g. Physics">
+            </label>
+            <label class="field">Exam date
+              <input id="exam_date" type="date" required>
+            </label>
+            <fieldset class="field seg-field">
+              <legend>Difficulty</legend>
+              <div class="seg">
+                <label><input type="radio" name="difficulty" value="1"><span>1</span></label>
+                <label><input type="radio" name="difficulty" value="2"><span>2</span></label>
+                <label><input type="radio" name="difficulty" value="3" checked><span>3</span></label>
+                <label><input type="radio" name="difficulty" value="4"><span>4</span></label>
+                <label><input type="radio" name="difficulty" value="5"><span>5</span></label>
+              </div>
+              <div class="seg-hint"><span>Easy</span><span>Hard</span></div>
+            </fieldset>
+            <label class="field"><span>Topics <span class="optional">optional</span></span>
+              <input id="topics" maxlength="120" placeholder="e.g. Optics, thermodynamics">
+            </label>
+            <button class="btn" type="submit">Add subject</button>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><h2>Your subjects</h2></div>
+          <div class="table-wrap" id="subject-table"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ To-do ============ -->
+    <section id="view-todos" class="view" hidden>
+      <div class="grid subjects-layout">
+        <article class="card">
+          <div class="card-head"><h2>Add a task</h2></div>
+          <form id="todo-form" class="form">
+            <label class="field">Task
+              <input id="todo-title" required maxlength="120" placeholder="e.g. Finish chapter 4 notes">
+            </label>
+            <label class="field"><span>Subject <span class="optional">optional</span></span>
+              <select id="todo-subject"><option value="">No subject</option></select>
+            </label>
+            <label class="field"><span>Due date <span class="optional">optional</span></span>
+              <input id="todo-due" type="date">
+            </label>
+            <button class="btn" type="submit">Add task</button>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h2>Your tasks</h2>
+            <button id="todo-clear" class="link-btn" type="button" hidden>Clear completed</button>
+          </div>
+          <div class="chips" id="todo-filters" role="group" aria-label="Filter tasks"></div>
+          <div id="todo-list"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ Focus timer ============ -->
+    <section id="view-focus" class="view" hidden>
+      <div class="grid focus-layout">
+        <article class="card focus-card">
+          <div class="chips phase-tabs" id="phase-tabs" role="group" aria-label="Timer mode">
+            <button class="chip" type="button" data-phase="focus">Focus</button>
+            <button class="chip" type="button" data-phase="short">Short break</button>
+            <button class="chip" type="button" data-phase="long">Long break</button>
+          </div>
+
+          <div class="ring-wrap">
+            <svg viewBox="0 0 220 220" aria-hidden="true">
+              <circle class="ring-track" cx="110" cy="110" r="96"/>
+              <circle id="ring-arc" class="ring-arc" cx="110" cy="110" r="96" transform="rotate(-90 110 110)"/>
+            </svg>
+            <div class="ring-text">
+              <div id="timer-time" class="timer-time" role="timer">25:00</div>
+              <div id="timer-label" class="timer-label">Focus</div>
+            </div>
+          </div>
+
+          <div id="cycle-dots" class="dots" role="img"></div>
+
+          <div class="btn-row center">
+            <button id="timer-start" class="btn big" type="button">Start</button>
+            <button id="timer-reset" class="btn ghost" type="button">Reset</button>
+            <button id="timer-skip" class="btn ghost" type="button">Skip</button>
+          </div>
+
+          <label class="field">Studying
+            <select id="timer-subject"><option value="">No subject</option></select>
+          </label>
+        </article>
+
+        <div class="stack">
+          <article class="card">
+            <div class="card-head"><h2>Your focus time</h2></div>
+            <div class="stat-row">
+              <div class="stat"><b id="stat-today-n">0</b><small>rounds today</small></div>
+              <div class="stat"><b id="stat-today-m">0m</b><small>focused today</small></div>
+              <div class="stat"><b id="stat-total-m">0m</b><small>all time</small></div>
+            </div>
+            <ul id="focus-recent" class="recent"></ul>
+          </article>
+
+          <article class="card">
+            <div class="card-head"><h2>Timer lengths</h2><span class="meta">Minutes</span></div>
+            <div class="lengths">
+              <label class="field">Focus <input id="cfg-focus" type="number" min="1" max="180" step="1"></label>
+              <label class="field">Short break <input id="cfg-short" type="number" min="1" max="60" step="1"></label>
+              <label class="field">Long break <input id="cfg-long" type="number" min="1" max="60" step="1"></label>
+              <label class="field">Long break after <input id="cfg-every" type="number" min="2" max="12" step="1"></label>
+            </div>
+            <p class="plain small" style="margin-top:12px">The classic Pomodoro is 25 minutes of focus, a 5 minute break, and a longer break after every 4 rounds. A finished focus round counts toward your streak.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Flashcards ============ -->
+    <section id="view-flashcards" class="view" hidden>
+      <div id="fc-library">
+        <article class="card">
+          <div class="card-head"><h2>Make flashcards</h2><span class="meta">Write one card per line</span></div>
+          <form id="mc-form" class="form fc-form">
+            <div class="row2">
+              <label class="field">Deck name
+                <input id="mc-title" required maxlength="200" placeholder="e.g. Biology chapter 3">
+              </label>
+              <label class="field">Subject <select id="mc-subject"><option value="">No subject</option></select></label>
+            </div>
+            <label class="field">Cards, one per line as Question :: Answer
+              <textarea id="mc-text" rows="6" required maxlength="20000" placeholder="What is photosynthesis? :: How plants turn light, water and CO2 into sugar and oxygen&#10;Powerhouse of the cell :: Mitochondria"></textarea>
+            </label>
+            <button id="mc-submit" class="btn" type="submit">Make deck</button>
+          </form>
+        </article>
+
+        <div class="card-head section-gap"><h2>Your decks</h2></div>
+        <div id="deck-grid" class="deck-grid"></div>
+      </div>
+
+      <div id="fc-study" hidden>
+        <article class="card study">
+          <div class="card-head">
+            <div><h2 id="study-title"></h2><span class="meta" id="study-meta"></span></div>
+            <button id="study-exit" class="btn ghost" type="button">Back to decks</button>
+          </div>
+          <div class="meter" aria-hidden="true"><i id="study-bar"></i></div>
+
+          <button id="flip" class="flip" type="button" aria-label="Flip card">
+            <span class="flip-inner">
+              <span class="face front"><small>Question</small><p id="card-front"></p></span>
+              <span class="face back"><small>Answer</small><p id="card-back"></p></span>
+            </span>
+          </button>
+          <p class="plain small center-text">Click the card or press Space to flip it. Use the arrow keys to move between cards.</p>
+
+          <div class="btn-row center">
+            <button id="card-prev" class="btn ghost" type="button">Previous</button>
+            <button id="card-learning" class="btn ghost" type="button">Still learning</button>
+            <button id="card-known" class="btn" type="button">I know this</button>
+            <button id="card-next" class="btn ghost" type="button">Next</button>
+          </div>
+          <div class="btn-row center" style="margin-top:0">
+            <button id="deck-shuffle" class="link-btn" type="button">Shuffle</button>
+            <button id="deck-reset" class="link-btn" type="button">Reset progress</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ Settings ============ -->
+    <section id="view-settings" class="view" hidden>
+      <div class="grid settings-layout">
+        <article class="card">
+          <div class="card-head"><h2>Daily study time</h2></div>
+          <form id="settings-form" class="form">
+            <label class="field">Hours available per day
+              <input id="daily_hours" type="number" step="0.5" min="0.5" max="16" required>
+            </label>
+            <label class="field">First session starts at
+              <input id="start_time" type="time" required>
+            </label>
+            <label class="field">Remind me before a session starts
+              <span class="inline-input"><input id="reminder_lead" type="number" min="0" max="120" step="1" required> <span>minutes</span></span>
+            </label>
+            <button class="btn" type="submit">Save and rebuild schedule</button>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><h2>Reminders</h2></div>
+          <p class="plain" id="reminder-status"></p>
+          <p class="plain next-line" id="reminder-next"></p>
+          <div class="btn-row">
+            <button id="notify-btn-2" class="btn" type="button">Allow notifications</button>
+            <button id="notify-test" class="btn ghost" type="button">Send a test reminder</button>
+          </div>
+          <p class="plain small">You get an alert at the top of this page with a chime, plus a browser notification if allowed. Keep this page open in any tab; reminders are checked every 15 seconds.</p>
+        </article>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="alerts" class="alerts"></div>
+<div id="tooltip" role="tooltip" hidden></div>
+<div id="toast" role="status" hidden></div>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
