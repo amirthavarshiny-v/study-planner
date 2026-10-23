@@ -1,4 +1,5 @@
 import os
+import time
 import sqlite3
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -11,6 +12,11 @@ BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "planner.db"
 
 COLOR_SLOTS = 8   # matches the 8 categorical colours in static/style.css
+
+# Hosts run on UTC. Use Indian time so schedules and reminders match the student.
+os.environ["TZ"] = "Asia/Kolkata"
+if hasattr(time, "tzset"):
+    time.tzset()
 
 app = Flask(__name__)
 
@@ -669,6 +675,8 @@ def update_card(card_id):
     return jsonify(ok=True)
 
 
+# Create tables on import too, so hosts that load `app` through WSGI work.
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
