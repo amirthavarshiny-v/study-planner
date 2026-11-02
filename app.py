@@ -11,7 +11,7 @@ from scheduler import build_plan, parse_date
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "planner.db"
 
-COLOR_SLOTS = 8   # matches the 8 categorical colours in static/style.css
+COLOR_SLOTS = 8 
 
 # Hosts run on UTC. Use Indian time so schedules and reminders match the student.
 os.environ["TZ"] = "Asia/Kolkata"
